@@ -17,17 +17,18 @@
     .btn-apply { background: #1565c0; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; }
     .btn-apply:active { background: #0d47a1; }
 
-    .btn-group { display: flex; gap: 10px; margin-bottom: 20px; }
-    button { cursor: pointer; border: none; padding: 12px; border-radius: 8px; font-size: 16px; font-weight: bold; width: 100%; transition: 0.2s; }
-    .btn-dummy { background: #e0e0e0; color: #333; }
-    .btn-calc { background: #007aff; color: white; }
+    .btn-calc { cursor: pointer; border: none; padding: 12px; border-radius: 8px; font-size: 16px; font-weight: bold; width: 100%; transition: 0.2s; background: #007aff; color: white; }
+    .btn-calc:active { background: #005bb5; }
     
     .player-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
     .player-row input { padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; text-align: center; }
     .input-name { width: 70px; }
+    /* 숫자 입력칸에서 스피너(위아래 화살표) 숨기기 */
     .input-score { width: 50px; }
+    .input-score::-webkit-outer-spin-button,
+    .input-score::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     
-    .btn-gender { padding: 8px; width: 50px; font-size: 14px; border-radius: 6px; }
+    .btn-gender { padding: 8px; width: 50px; font-size: 14px; border-radius: 6px; cursor: pointer; }
     .gender-m { background: #e3f2fd; color: #1976d2; border: 1px solid #90caf9; }
     .gender-f { background: #fce4ec; color: #c2185b; border: 1px solid #f48fb1; }
     .total-score { font-weight: bold; width: 40px; text-align: right; color: #555; }
@@ -41,7 +42,6 @@
 <div class="container">
   <h2>🎳 최적의 팀 조합 찾기</h2>
 
-  <!-- 인원수 설정 영역 -->
   <div class="top-controls">
     <label>참여 인원 설정</label>
     <div class="count-input-group">
@@ -49,12 +49,7 @@
       <button class="btn-apply" onclick="setPlayerCount()">적용</button>
     </div>
   </div>
-  
-  <div class="btn-group">
-    <button class="btn-dummy" onclick="loadDummyData()">테스트용 데이터 채우기</button>
-  </div>
 
-  <!-- HTML5 Native 자동완성(Datalist)을 위한 공간 -->
   <datalist id="presetNameList"></datalist>
 
   <div id="player-list"></div>
@@ -68,10 +63,6 @@
 </div>
 
 <script>
-  // ==========================================
-  // 📝 미리 설정해둘 이름 목록 
-  // (여기에 볼링 클럽 회원들 이름을 자유롭게 추가/수정하세요!)
-  // ==========================================
   const PRESET_NAMES = [
     '고영훈', '정병인', '장혁준', '김단비', '김민수', 
     '김부규', '김우진', '문종덕', '박도은', '박종철',
@@ -79,14 +70,10 @@
     '유인형', '이덕연', '김지혜', '한소망'
   ];
 
-  // ==========================================
-  // 1. 상태 및 렌더링
-  // ==========================================
   let players = Array.from({length: 8}, (_, i) => ({
     id: i, name: '', gender: '남', score1: '', score2: ''
   }));
 
-  // 페이지 로드 시 이름 목록(datalist) 초기화
   function initPresets() {
     const datalist = document.getElementById('presetNameList');
     datalist.innerHTML = '';
@@ -97,7 +84,6 @@
     });
   }
 
-  // 인원수 변경 적용 함수
   function setPlayerCount() {
     const inputCount = parseInt(document.getElementById('player-count').value, 10);
     if (isNaN(inputCount) || inputCount < 1) {
@@ -108,9 +94,9 @@
     const newPlayers = [];
     for (let i = 0; i < inputCount; i++) {
       if (i < players.length) {
-        newPlayers.push(players[i]); // 기존 데이터 유지
+        newPlayers.push(players[i]); 
       } else {
-        newPlayers.push({ id: i, name: '', gender: '남', score1: '', score2: '' }); // 새 빈칸 추가
+        newPlayers.push({ id: i, name: '', gender: '남', score1: '', score2: '' });
       }
     }
     players = newPlayers;
@@ -126,13 +112,13 @@
       row.className = 'player-row';
       const total = (Number(p.score1) || 0) + (Number(p.score2) || 0);
       
-      // 이름 input에 list="presetNameList" 속성을 추가하여 자동완성 연결
+      // onkeyup 대신 oninput을 사용하고, 렌더링 대신 합계 DOM만 직접 조작하도록 수정
       row.innerHTML = `
         <input type="text" class="input-name" list="presetNameList" placeholder="이름" value="${p.name}" onchange="updateData(${index}, 'name', this.value)">
         <button class="btn-gender ${p.gender === '남' ? 'gender-m' : 'gender-f'}" onclick="toggleGender(${index})">${p.gender}</button>
-        <input type="number" class="input-score" placeholder="1겜" value="${p.score1}" onkeyup="updateData(${index}, 'score1', this.value)">
-        <input type="number" class="input-score" placeholder="2겜" value="${p.score2}" onkeyup="updateData(${index}, 'score2', this.value)">
-        <div class="total-score">${total || 0}</div>
+        <input type="number" inputmode="numeric" class="input-score" placeholder="1겜" value="${p.score1}" oninput="updateScore(${index}, 'score1', this.value)">
+        <input type="number" inputmode="numeric" class="input-score" placeholder="2겜" value="${p.score2}" oninput="updateScore(${index}, 'score2', this.value)">
+        <div class="total-score" id="total-${index}">${total || 0}</div>
       `;
       listDiv.appendChild(row);
     });
@@ -140,7 +126,13 @@
 
   function updateData(index, field, value) {
     players[index][field] = value;
-    if (field === 'score1' || field === 'score2') render();
+  }
+
+  // 💡 포커스 끊김 방지용 핵심 함수: 화면을 다시 그리지 않고 합계 숫자만 업데이트
+  function updateScore(index, field, value) {
+    players[index][field] = value;
+    const total = (Number(players[index].score1) || 0) + (Number(players[index].score2) || 0);
+    document.getElementById(`total-${index}`).innerText = total || 0;
   }
 
   function toggleGender(index) {
@@ -148,28 +140,8 @@
     render();
   }
 
-  // 초기화 실행
   initPresets();
   render();
-
-  // ==========================================
-  // 2. 알고리즘 (기존과 완벽히 동일)
-  // ==========================================
-  function loadDummyData() {
-    const dummies = [
-      { name: '김남일', gender: '남', score1: 170, score2: 185 }, { name: '이남이', gender: '남', score1: 160, score2: 170 },
-      { name: '박여일', gender: '여', score1: 180, score2: 165 }, { name: '최여이', gender: '여', score1: 150, score2: 160 },
-      { name: '정남삼', gender: '남', score1: 190, score2: 180 }, { name: '강남사', gender: '남', score1: 170, score2: 170 },
-      { name: '조여삼', gender: '여', score1: 165, score2: 160 }, { name: '윤여사', gender: '여', score1: 175, score2: 160 }
-    ];
-    // 현재 설정된 인원수 내에서만 더미데이터 채우기
-    dummies.forEach((d, i) => {
-      if (i < players.length) {
-        players[i] = { id: i, ...d };
-      }
-    });
-    render();
-  }
 
   function getTargetScore(team) {
     const mCount = team.filter(p => p.gender === '남').length;
